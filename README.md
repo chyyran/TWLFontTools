@@ -11,9 +11,12 @@ Usage: `dotnet twlfonttabledumper.dll`, while TWLFontTable.dat is in the same di
 
 ## UVGen
 Generates UV coordinates (for 32 characters per line) for a font texture
+
 Usage: `dotnet uvgen.dll [fontinfo.xml] [texture.png] [width] [height] [size]` where fontinfo.xml is a Tinke* character map for the NFTR.
+
 _\* The modified font plugin is required to generate a compatible fontinfo.xml and texture dump. See https://github.com/RonnChyran/tinke_
 
 ## LUTGen
 Generates a lookup table from UTF16 codepoints indices to the UV coordinate array index.
+
 Usage: `dotnet lutgen.dll [fontinfo.xml]`
