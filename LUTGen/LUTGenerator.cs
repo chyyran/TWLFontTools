@@ -37,7 +37,7 @@ namespace LUTGen
             for (int i = 0; i <= latestChar; i++)
             {
                 int index = this.Chars.FirstOrDefault(c => c.Character == i)?.Index ?? 0;
-                File.Append($"0x{index.ToString("X2")},");
+                File.Append($"{index},");
                 if(lineCounter == 0x20)
                 {
                     lineCounter = 0;
