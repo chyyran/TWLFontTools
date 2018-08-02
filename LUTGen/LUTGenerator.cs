@@ -33,10 +33,20 @@ namespace LUTGen
 
         private void WriteLUTEntries() {
             char latestChar = this.Chars.OrderByDescending(c => c.Character).First().Character;
+            int lineCounter = 0;
             for (int i = 0; i <= latestChar; i++)
             {
                 int index = this.Chars.FirstOrDefault(c => c.Character == i)?.Index ?? 0;
-                File.AppendLine($"{index},");
+                File.Append($"0x{index.ToString("X2")},");
+                if(lineCounter == 0x20)
+                {
+                    lineCounter = 0;
+                    File.AppendLine();
+                }
+                else
+                {
+                   lineCounter++;
+                }
             }
         }
 
