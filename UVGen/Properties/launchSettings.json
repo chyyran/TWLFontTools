@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "UVGen": {
+      "commandName": "Project",
+      "commandLineArgs": "fontinfo_large.xml large_font.png 16 20 large"
+    },
+    "Large": {
+      "commandName": "Project",
+      "commandLineArgs": "fontinfo_large.xml large_font.png 16 20 large"
+    },
+    "Small": {
+      "commandName": "Project",
+      "commandLineArgs": "fontinfo_medium.xml medium_font.png 12 16 small"
+    }
+  }
+}
