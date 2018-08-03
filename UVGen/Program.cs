@@ -35,7 +35,8 @@ namespace UVGen
 
             var coords = new UVCoordinateGenerator(charmap, height, width, size, imageHeight, imageWidth);
             File.WriteAllText($"uvcoords_{size.ToLowerInvariant()}_font.h", coords.ToString());
-            
+
+
 
         }
     }

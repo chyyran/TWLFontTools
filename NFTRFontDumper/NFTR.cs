@@ -36,7 +36,8 @@ namespace NFTRFontDumper
     // http://romxhack.esforos.com/fuentes-nftr-de-nds-t67
     public static class NFTR
     {
-        const int CHARS_PER_LINE = 32;
+        public const int MAX_WIDTH = 512;
+        public const int MAX_HEIGHT = 256;
         public static sNFTR Read(Stream file)
         {
             sNFTR font = new sNFTR();
@@ -340,7 +341,20 @@ namespace NFTRFontDumper
             XDocument doc = new XDocument();
             doc.Declaration = new XDeclaration("1.0", encoding.BodyName, null);
 
-            XElement root = new XElement("CharMap");
+            
+
+            XElement charMap = new XElement("CharMap");
+            XElement uvGen = new XElement("UVGen");
+            int numChars = font.plgc.tiles.Length;
+            int numColumns = NFTR.MAX_WIDTH / font.plgc.tile_width;
+            int numRows = (int)Math.Floor((double)MAX_HEIGHT / font.plgc.tile_height);
+            int charsPerTexture = (int)Math.Floor((double)numChars / (numColumns * numRows));
+            uvGen.Add(new XElement("ColumnsPerTexture", numColumns));
+            uvGen.Add(new XElement("RowsPerTexture", numRows));
+            uvGen.Add(new XElement("SpritesPerTexture", numColumns * numRows));
+            uvGen.Add(new XElement("TileHeight", font.fnif.height));
+            uvGen.Add(new XElement("TileWidth", font.fnif.width));
+            charMap.Add(uvGen);
 
             var charCodeTuples = charTable.OrderBy(kvp => kvp.Value).ToList();
             foreach (var kvp in charCodeTuples)
@@ -364,7 +378,7 @@ namespace NFTRFontDumper
                 chx.SetAttributeValue("Index", tileCode.ToString());
                 chx.SetAttributeValue("Width", info.pixel_length.ToString());
 
-                root.Add(chx);
+                charMap.Add(chx);
             }
             // Export general info
             // FNIF data
@@ -383,8 +397,10 @@ namespace NFTRFontDumper
                 xmlFnif.Add(new XElement("BearingY", font.fnif.bearing_y));
                 xmlFnif.Add(new XElement("BearingX", font.fnif.bearing_x));
             }
-            root.Add(xmlFnif);
-            doc.Add(root);
+            charMap.Add(xmlFnif);
+
+            
+            doc.Add(charMap);
             return doc;
         }
 
@@ -393,53 +409,48 @@ namespace NFTRFontDumper
             return n + (n % 2);
         }
 
-        private static Image<Rgba32> ToImage(sNFTR font, Rgba32[] palette, int charWidth, int charHeight,
-                                      int numRows, int numColumns, int zoom)
+        private static IEnumerable<Image<Rgba32>> ToTileset(sNFTR font, Rgba32[] palette, int charWidth, int charHeight,
+                                      int rowsPerTexture, int colsPerTexture, int zoom)
         {
             int numChars = font.plgc.tiles.Length;
-            int width = numColumns * charWidth;
-            int height = MakeEven(numRows * charHeight);
 
-            var image = new Image<Rgba32>(width, height);
-            image.Mutate(im => im.Fill(palette[palette.Length - 1]));
-
-            // Draw one empty row for control characters
-            for (int j = 0; j < 0x20; j++)
+            for (int processedChars = 0; processedChars < numChars;)
             {
-                int x = j * charWidth;
-                int y = 0;
-                image.Mutate(i => i.DrawImage(GraphicsOptions.Default, Get_Char(font, 0, palette, zoom), new Point(x, y)));
-            }
+                var image = new Image<Rgba32>(MAX_WIDTH, MAX_HEIGHT);
+                image.Mutate(im => im.Fill(palette[palette.Length - 1]));
 
-            // Draw chars
-            for (int i = 0; i < numRows - 1; i++)
-            {
-                for (int j = 0; j < numColumns; j++)
+                // add charsPerTexture images here and return the image.
+                for (int i = 0; i < rowsPerTexture; i++)
                 {
-                    int index = i * numColumns + j;
-                    if (index >= numChars)
-                        break;
+                    for (int j = 0; j < colsPerTexture; j++)
+                    {
+                        int index = processedChars++;
+                        if (index >= numChars)
+                            break;
 
-                    int x = j * charWidth;
-                    int y = (i + 1) * charHeight;
-                    image.Mutate(im => im.DrawImage(GraphicsOptions.Default,
-                        Get_Char(font, index, palette, zoom), new Point(x, y)));
+                        int x = j * charWidth;
+                        // First row is empty.
+                        int y = i * charHeight;
+                        image.Mutate(im => im.DrawImage(GraphicsOptions.Default,
+                            Get_Char(font, index, palette, zoom), new Point(x, y)));
+                    }
                 }
+                yield return image;
             }
-            return image;
         }
-        public static Image<Rgba32> ToImage(sNFTR font, Rgba32[] palette)
+        public static IEnumerable<Image<Rgba32>> ToTileset(sNFTR font, Rgba32[] palette)
         {
-            int numChars = font.plgc.tiles.Length + 0x20;
+            int numChars = font.plgc.tiles.Length;
 
             // Get the image size
-            int numColumns = (numChars < CHARS_PER_LINE) ? numChars : CHARS_PER_LINE;
-            int numRows = (int)Math.Ceiling((double)numChars / numColumns);
-
             int charWidth = font.plgc.tile_width;
             int charHeight = font.plgc.tile_height;
 
-            return ToImage(font, palette, charWidth, charHeight, numRows, numColumns, 1);
+            int numColumns = (int)Math.Floor((double)MAX_WIDTH / charWidth);
+            int numRows = (int)Math.Floor((double)MAX_HEIGHT / charHeight);
+
+            int charsPerTexture = (int)Math.Floor((double)numChars / (numColumns * numRows));
+            return ToTileset(font, palette, charWidth, charHeight, numRows, numColumns, 1);
         }
     }
 

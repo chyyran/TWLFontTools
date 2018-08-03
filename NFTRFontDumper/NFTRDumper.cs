@@ -22,9 +22,9 @@ namespace NFTRFontDumper
             Fill_CharTile();
         }
 
-        public Image<Rgba32> GetTextureMapping()
+        public IEnumerable<Image<Rgba32>> GetTextureMapping()
         {
-            return NFTR.ToImage(font, palette);
+            return NFTR.ToTileset(font, palette);
         }
 
         public XDocument GetXmlInfo()

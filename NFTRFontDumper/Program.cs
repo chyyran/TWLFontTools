@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing.Quantization;
 
 namespace NFTRFontDumper
 {
@@ -21,7 +22,7 @@ namespace NFTRFontDumper
                 Console.WriteLine($"{args[0]} not found.");
                 Environment.Exit(1);
             }
-            Rgba32 color = Rgba32.FromHex("f5f8f4");
+            Rgba32 color = Rgba32.FromHex("ff00ff");
             try
             {
                 color = Rgba32.FromHex(args[1]);
@@ -34,14 +35,22 @@ namespace NFTRFontDumper
             Stream nftrData = File.OpenRead(args[0]);
             var font = NFTR.Read(nftrData);
             var dumper = new NFTRDumper(font, color);
+
             using (var file = File.OpenWrite(Path.GetFileNameWithoutExtension(args[0]) + ".xml"))
             {
                 dumper.GetXmlInfo().Save(file);
             }
-            using (var file = File.OpenWrite(Path.GetFileNameWithoutExtension(args[0]) + ".png"))
+            int counter = 0;
+            var encoder = new PngEncoder();
+            foreach (var texture in dumper.GetTextureMapping())
             {
-                dumper.GetTextureMapping().Save(file, new PngEncoder());
+                using (var file = File.OpenWrite(Path.GetFileNameWithoutExtension(args[0]) + $"_{counter}.png"))
+                {
+                    texture.Save(file, encoder);
+                }
+                counter++;
             }
+           
         }
 
     }
