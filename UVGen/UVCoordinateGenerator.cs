@@ -15,7 +15,10 @@ namespace UVGen
             this.TextSizeName = size;
             this.File = new StringBuilder();
             this.WriteHeaderDefs(imageheight, imagewidth);
-            this.WriteTextCoords(0);
+            for(int i = 0; i < info.UVInfo.TextureCount; i++)
+            {
+                this.WriteTextCoords(i);
+            }
             this.WriteEof();
         }
 
