@@ -2,7 +2,7 @@
   "profiles": {
     "UVGen": {
       "commandName": "Project",
-      "commandLineArgs": "fontinfo_large.xml large_font.png 16 20 large"
+      "commandLineArgs": "TBF1_m.xml large"
     },
     "Large": {
       "commandName": "Project",

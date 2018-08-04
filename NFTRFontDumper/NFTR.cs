@@ -176,22 +176,23 @@ namespace NFTRFontDumper
         public static Rgba32[] CalculatePalette(int depth, bool inverse, Rgba32 background)
         {
             Rgba32[] palette = new Rgba32[(1 << depth) + 1];
-
-            for (int i = 0; i < palette.Length - 1; i++)
+            palette[0] = background;
+            for (int i = 1; i < palette.Length - 1; i++)
             {
-                int colorIndexRed = i * (background.R / (palette.Length - 1));
-                int colorIndexGreen = i * (background.G / (palette.Length - 1));
-                int colorIndexBlue = i * (background.B / (palette.Length - 1));
+                int colorIndexRed = i * (0xFF / (palette.Length - 1));
+                int colorIndexGreen = i * (0xFF / (palette.Length - 1));
+                int colorIndexBlue = i * (0xFF / (palette.Length - 1));
 
 
                 if (!inverse)
                 {
-                    colorIndexRed = background.R - colorIndexRed;
-                    colorIndexGreen = background.G - colorIndexGreen;
-                    colorIndexBlue = background.B - colorIndexBlue;
+                    colorIndexRed = 0xFF - colorIndexRed;
+                    colorIndexGreen = 0xFF - colorIndexGreen;
+                    colorIndexBlue = 0xFF - colorIndexBlue;
                 }
 
-                palette[i] = new Rgba32((byte)colorIndexRed, (byte)colorIndexGreen, (byte)colorIndexBlue, 255);
+                var color = new Rgba32((byte)colorIndexRed, (byte)colorIndexGreen, (byte)colorIndexBlue, 0xFF);
+                palette[i] = color;
             }
 
             palette[palette.Length - 1] = background;
@@ -354,6 +355,7 @@ namespace NFTRFontDumper
             uvGen.Add(new XElement("SpritesPerTexture", numColumns * numRows));
             uvGen.Add(new XElement("TileHeight", font.fnif.height));
             uvGen.Add(new XElement("TileWidth", font.fnif.width));
+            uvGen.Add(new XElement("TextureCount", (int)Math.Ceiling((double)numChars / (numColumns * numRows))));
             charMap.Add(uvGen);
 
             var charCodeTuples = charTable.OrderBy(kvp => kvp.Value).ToList();
@@ -398,8 +400,6 @@ namespace NFTRFontDumper
                 xmlFnif.Add(new XElement("BearingX", font.fnif.bearing_x));
             }
             charMap.Add(xmlFnif);
-
-            
             doc.Add(charMap);
             return doc;
         }
