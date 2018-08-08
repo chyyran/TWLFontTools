@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NFTRFontDumper": {
+      "commandName": "Project",
+      "commandLineArgs": ".\\TBF1_m.NFTR small"
+    }
+  }
+}

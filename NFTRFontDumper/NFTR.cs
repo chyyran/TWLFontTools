@@ -38,6 +38,13 @@ namespace NFTRFontDumper
     {
         public const int MAX_WIDTH = 512;
         public const int MAX_HEIGHT = 256;
+
+        private const int TIER_0_WIDTH = 512;
+        private const int TIER_0_HEIGHT = 128;
+
+        private const int TIER_2_WIDTH = 128;
+        private const int TIER_2_HEIGHT = 64;
+
         public static sNFTR Read(Stream file)
         {
             sNFTR font = new sNFTR();
@@ -341,21 +348,39 @@ namespace NFTRFontDumper
 
             XDocument doc = new XDocument();
             doc.Declaration = new XDeclaration("1.0", encoding.BodyName, null);
+            int charWidth = font.plgc.tile_width;
+            int charHeight = font.plgc.tile_height;
+            int numChars = font.plgc.tiles.Length;
 
-            
+            int tier0Cols = (int)Math.Floor((double)TIER_0_WIDTH / charWidth);
+            int tier0Rows = (int)Math.Floor((double)TIER_0_HEIGHT / charHeight);
+            int tier0CharPerTex = tier0Cols * tier0Rows;
+            int tier0TotalChars = tier0CharPerTex; // enough to fit one texture.
+
+            int tier2Cols = (int)Math.Floor((double)TIER_2_WIDTH / charWidth);
+            int tier2Rows = (int)Math.Floor((double)TIER_2_HEIGHT / charHeight);
+            int tier2TotalChars = numChars - tier0TotalChars; // the rest.
+
+            int tier2TextureCount = ((int)Math.Ceiling((double)tier2TotalChars / (tier2Cols * tier2Rows)));
+
+            int textureCount = 1 + tier2TextureCount;
 
             XElement charMap = new XElement("CharMap");
             XElement uvGen = new XElement("UVGen");
-            int numChars = font.plgc.tiles.Length;
             int numColumns = NFTR.MAX_WIDTH / font.plgc.tile_width;
             int numRows = (int)Math.Floor((double)MAX_HEIGHT / font.plgc.tile_height);
             int charsPerTexture = (int)Math.Floor((double)numChars / (numColumns * numRows));
-            uvGen.Add(new XElement("ColumnsPerTexture", numColumns));
-            uvGen.Add(new XElement("RowsPerTexture", numRows));
-            uvGen.Add(new XElement("SpritesPerTexture", numColumns * numRows));
+            uvGen.Add(new XElement("PrimaryColumns", tier0Cols));
+            uvGen.Add(new XElement("PrimaryRows", tier0Rows));
+            uvGen.Add(new XElement("PrimarySprites", tier0Cols * tier0Rows));
+
+            uvGen.Add(new XElement("AuxColumns", tier2Cols));
+            uvGen.Add(new XElement("AuxRows", tier2Rows));
+            uvGen.Add(new XElement("AuxSprites", tier2Cols * tier2Rows));
+            uvGen.Add(new XElement("AuxTextureCount", tier2TextureCount));
+
             uvGen.Add(new XElement("TileHeight", font.fnif.height));
             uvGen.Add(new XElement("TileWidth", font.fnif.width));
-            uvGen.Add(new XElement("TextureCount", (int)Math.Ceiling((double)numChars / (numColumns * numRows))));
             charMap.Add(uvGen);
 
             var charCodeTuples = charTable.OrderBy(kvp => kvp.Value).ToList();
@@ -409,49 +434,62 @@ namespace NFTRFontDumper
             return n + (n % 2);
         }
 
-        private static IEnumerable<Image<Rgba32>> ToTileset(sNFTR font, Rgba32[] palette, int charWidth, int charHeight,
-                                      int rowsPerTexture, int colsPerTexture, int zoom)
+        private static IEnumerable<Image<Rgba32>> ToTilesetSegment(sNFTR font, Rgba32[] palette, 
+            int fromIndex, int count, int cols, int rows, int texHeight, int texWidth, int zoom)
         {
-            int numChars = font.plgc.tiles.Length;
+            int charWidth = font.plgc.tile_width;
+            int charHeight = font.plgc.tile_height;
 
-            for (int processedChars = 0; processedChars < numChars;)
+            for (int processedChars = fromIndex; processedChars < count + fromIndex;)
             {
-                var image = new Image<Rgba32>(MAX_WIDTH, MAX_HEIGHT);
+                var image = new Image<Rgba32>(texWidth, texHeight);
                 image.Mutate(im => im.Fill(palette[palette.Length - 1]));
 
                 // add charsPerTexture images here and return the image.
-                for (int i = 0; i < rowsPerTexture; i++)
+                for (int i = 0; i < rows; i++)
                 {
-                    for (int j = 0; j < colsPerTexture; j++)
+                    for (int j = 0; j < cols; j++)
                     {
                         int index = processedChars++;
-                        if (index >= numChars)
+                        if (index >= count + fromIndex)
                             break;
 
                         int x = j * charWidth;
                         // First row is empty.
                         int y = i * charHeight;
+                        var fontChar = Get_Char(font, index, palette, 1);
+                        Console.WriteLine($"processed index {index}");
                         image.Mutate(im => im.DrawImage(GraphicsOptions.Default,
-                            Get_Char(font, index, palette, zoom), new Point(x, y)));
+                           fontChar, new Point(x, y)));
                     }
                 }
                 yield return image;
             }
         }
+
         public static IEnumerable<Image<Rgba32>> ToTileset(sNFTR font, Rgba32[] palette)
         {
-            int numChars = font.plgc.tiles.Length;
-
-            // Get the image size
+            //int numChars = font.plgc.tiles.Length;
+            int numChars = 702; // up to ヾ to support full kana set.
             int charWidth = font.plgc.tile_width;
             int charHeight = font.plgc.tile_height;
 
-            int numColumns = (int)Math.Floor((double)MAX_WIDTH / charWidth);
-            int numRows = (int)Math.Floor((double)MAX_HEIGHT / charHeight);
+            int tier0Cols = (int)Math.Floor((double)TIER_0_WIDTH / charWidth);
+            int tier0Rows = (int)Math.Floor((double)TIER_0_HEIGHT / charHeight);
+            int tier0CharPerTex = tier0Cols * tier0Rows;
+            int tier0TotalChars = tier0CharPerTex; // enough to fit one texture.
 
-            int charsPerTexture = (int)Math.Floor((double)numChars / (numColumns * numRows));
-            return ToTileset(font, palette, charWidth, charHeight, numRows, numColumns, 1);
+            int tier2Cols = (int)Math.Floor((double)TIER_2_WIDTH / charWidth);
+            int tier2Rows = (int)Math.Floor((double)TIER_2_HEIGHT / charHeight);
+            int tier2TotalChars = numChars - tier0TotalChars; // the rest.
+
+            var tilesegment = ToTilesetSegment(font, palette, 0, tier0TotalChars, tier0Cols, tier0Rows, TIER_0_HEIGHT, TIER_0_WIDTH, 1).ToList();
+            tilesegment.AddRange(ToTilesetSegment(font, palette, tier0TotalChars, tier2TotalChars, tier2Cols, tier2Rows, TIER_2_HEIGHT, TIER_2_WIDTH, 1));
+            tilesegment.AddRange(ToTilesetSegment(font, palette, 7202, font.plgc.tiles.Length - 7202, tier2Cols, tier2Rows, TIER_2_HEIGHT, TIER_2_WIDTH, 1).ToList());
+            return tilesegment;
+
         }
+
     }
 
     public struct sNFTR // Nitro FonT Resource

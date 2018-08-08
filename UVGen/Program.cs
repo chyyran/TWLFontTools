@@ -24,9 +24,8 @@ namespace UVGen
 
             var coords = new UVCoordinateGenerator(charmap, size, 512, 256);
             File.WriteAllText($"uvcoord_{size.ToLowerInvariant()}_font.h", coords.ToString());
-
-
-
+            var grith = new GritHeaderGenerator(charmap, size);
+            File.WriteAllText($"{size.ToLowerInvariant()}_font.h", grith.ToString());
         }
     }
 }

@@ -2,7 +2,7 @@
   "profiles": {
     "UVGen": {
       "commandName": "Project",
-      "commandLineArgs": "TBF1_m.xml large"
+      "commandLineArgs": "TBF1_l.xml large"
     },
     "Large": {
       "commandName": "Project",

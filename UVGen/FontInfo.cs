@@ -21,13 +21,18 @@ namespace UVGen
         private static UVInfo ReadUVInfo(XDocument charmapDocument)
         {
             var uvgen = charmapDocument.Root.Element("UVGen");
-            int cpt = XmlConvert.ToInt32(uvgen.Element("ColumnsPerTexture").Value);
-            int rpt = XmlConvert.ToInt32(uvgen.Element("RowsPerTexture").Value);
-            int spt = XmlConvert.ToInt32(uvgen.Element("SpritesPerTexture").Value);
+            int cpt = XmlConvert.ToInt32(uvgen.Element("PrimaryColumns").Value);
+            int rpt = XmlConvert.ToInt32(uvgen.Element("PrimaryRows").Value);
+            int spt = XmlConvert.ToInt32(uvgen.Element("PrimarySprites").Value);
+
+            int acpt = XmlConvert.ToInt32(uvgen.Element("AuxColumns").Value);
+            int arpt = XmlConvert.ToInt32(uvgen.Element("AuxRows").Value);
+            int aspt = XmlConvert.ToInt32(uvgen.Element("AuxSprites").Value);
+
             int th = XmlConvert.ToInt32(uvgen.Element("TileHeight").Value);
             int tw = XmlConvert.ToInt32(uvgen.Element("TileWidth").Value);
-            int tc = XmlConvert.ToInt32(uvgen.Element("TextureCount").Value);
-            return new UVInfo(cpt, rpt, spt, th, tw, tc);
+            int tc = XmlConvert.ToInt32(uvgen.Element("AuxTextureCount").Value);
+            return new UVInfo(cpt, rpt, spt, th, tw, tc, acpt, arpt, aspt);
         }
 
         private static IEnumerable<CharmapEntry> ReadCharmap(XDocument charmapDocument)

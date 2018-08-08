@@ -15,11 +15,23 @@ namespace UVGen
             this.TextSizeName = size;
             this.File = new StringBuilder();
             this.WriteHeaderDefs(imageheight, imagewidth);
-            for(int i = 0; i < info.UVInfo.TextureCount; i++)
+            for(int i = 0; i < info.UVInfo.AuxTextureCount + 1; i++)
             {
                 this.WriteTextCoords(i);
             }
+            this.WriteAuxPointers(info.UVInfo.AuxTextureCount + 1);
             this.WriteEof();
+        }
+
+        private void WriteAuxPointers(int count)
+        {
+            File.AppendLine($"static constexpr unsigned int *{this.TextSizeName.ToLowerInvariant()}_font_texcoords[] = {{");
+            for (int i = 0; i < count; i++)
+            {
+                File.AppendLine($"    {this.TextSizeName.ToLowerInvariant()}_font_{i}_texcoords,");
+            }
+            File.AppendLine();
+            File.AppendLine("};");
         }
 
         private void WriteHeaderDefs(int texHeight, int texWidth)
@@ -34,8 +46,8 @@ namespace UVGen
             File.AppendLine($"#define {this.TextSizeName}_FONT__H");
             File.AppendLine($"#define {this.TextSizeName}_FONT_BITMAP_WIDTH  {texWidth}");
             File.AppendLine($"#define {this.TextSizeName}_FONT_BITMAP_HEIGHT  {texHeight}");
-            File.AppendLine($"#define {this.TextSizeName}_FONT_NUM_IMAGES  0x{this.FontInfo.UVInfo.SpritesPerTexture.ToString("X2")}");
-            File.AppendLine($"#define {this.TextSizeName}_FONT_NUM_IMAGES_REMAINDER  0x{(this.FontInfo.CharMap.Count % this.FontInfo.UVInfo.SpritesPerTexture).ToString("X2")}");
+            File.AppendLine($"#define {this.TextSizeName}_FONT_PRM_NUM_IMAGES  0x{this.FontInfo.UVInfo.PrimarySpritesPerTexture.ToString("X2")}");
+            File.AppendLine($"#define {this.TextSizeName}_FONT_AUX_NUM_IMAGES  0x{this.FontInfo.UVInfo.AuxSpritesPerTexture.ToString("X2")}");
 
             File.AppendLine();
             File.AppendLine("// U,V,Width,Height");
@@ -50,12 +62,30 @@ namespace UVGen
         */
         private void WriteTextCoords(int textureIndex)
         {
-            File.AppendLine($"static constexpr unsigned int {this.TextSizeName.ToLowerInvariant()}_font_{textureIndex}_texcoords[] = {{");
-            for (int i = 0; i < this.FontInfo.UVInfo.RowsPerTexture; i++)
+            int rpt;
+            int cpt;
+            int spt;
+            int offset;
+            if (textureIndex == 0)
             {
-                for (int j = 0; j < this.FontInfo.UVInfo.ColumnsPerTexture; j++)
+                rpt = this.FontInfo.UVInfo.PrimaryRowsPerTexture;
+                cpt = this.FontInfo.UVInfo.PrimaryColumnsPerTexture;
+                spt = this.FontInfo.UVInfo.PrimarySpritesPerTexture;
+                offset = 0;
+            } else
+            {
+                rpt = this.FontInfo.UVInfo.AuxRowsPerTexture;
+                cpt = this.FontInfo.UVInfo.AuxColumnsPerTexture;
+                spt = this.FontInfo.UVInfo.AuxSpritesPerTexture;
+                offset = this.FontInfo.UVInfo.PrimarySpritesPerTexture - this.FontInfo.UVInfo.AuxSpritesPerTexture; 
+            }
+
+            File.AppendLine($"static constexpr unsigned int {this.TextSizeName.ToLowerInvariant()}_font_{textureIndex}_texcoords[] = {{");
+            for (int i = 0; i < rpt; i++)
+            {
+                for (int j = 0; j < cpt; j++)
                 {
-                    int characterIndex = (i * this.FontInfo.UVInfo.ColumnsPerTexture) + j + (this.FontInfo.UVInfo.SpritesPerTexture * textureIndex);
+                    int characterIndex = (i * cpt) + j + (spt * textureIndex) + offset;
                     if (characterIndex >= this.FontInfo.CharMap.Count) break;
                     var charEntry = this.FontInfo.CharMap[characterIndex];
                     File.AppendLine($"    {j * this.FontInfo.UVInfo.TileWidth}, " +
