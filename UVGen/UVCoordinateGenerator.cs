@@ -9,17 +9,21 @@ namespace UVGen
     public class UVCoordinateGenerator
     {
 
-        public UVCoordinateGenerator(FontInfo info, string size, int imageheight, int imagewidth)
+        public UVCoordinateGenerator(FontInfo info, IList<char> charset, string size, int imageheight, int imagewidth)
         {
             this.FontInfo = info;
+            Charset = charset;
             this.TextSizeName = size;
             this.File = new StringBuilder();
             this.WriteHeaderDefs(imageheight, imagewidth);
-            for(int i = 0; i < info.UVInfo.AuxTextureCount + 1; i++)
-            {
-                this.WriteTextCoords(i);
-            }
-            this.WriteAuxPointers(info.UVInfo.AuxTextureCount + 1);
+            this.WriteTextCoords(0);
+            File.AppendLine();
+            this.WriteLut();
+            //for(int i = 0; i < info.UVInfo.AuxTextureCount + 1; i++)
+            //{
+            //   this.WriteTextCoords(i);
+            // }
+            // this.WriteAuxPointers(info.UVInfo.AuxTextureCount + 1);
             this.WriteEof();
         }
 
@@ -46,13 +50,14 @@ namespace UVGen
             File.AppendLine($"#define {this.TextSizeName}_FONT__H");
             File.AppendLine($"#define {this.TextSizeName}_FONT_BITMAP_WIDTH  {texWidth}");
             File.AppendLine($"#define {this.TextSizeName}_FONT_BITMAP_HEIGHT  {texHeight}");
-            File.AppendLine($"#define {this.TextSizeName}_FONT_PRM_NUM_IMAGES  0x{this.FontInfo.UVInfo.PrimarySpritesPerTexture.ToString("X2")}");
-            File.AppendLine($"#define {this.TextSizeName}_FONT_AUX_NUM_IMAGES  0x{this.FontInfo.UVInfo.AuxSpritesPerTexture.ToString("X2")}");
+            File.AppendLine($"#define {this.TextSizeName}_FONT_PRM_NUM_IMAGES  0x{this.Charset.Count.ToString("X2")}");
+            // File.AppendLine($"#define {this.TextSizeName}_FONT_PRM_NUM_IMAGES  0x{this.FontInfo.UVInfo.PrimarySpritesPerTexture.ToString("X2")}");
+            //   File.AppendLine($"#define {this.TextSizeName}_FONT_AUX_NUM_IMAGES  0x{this.FontInfo.UVInfo.AuxSpritesPerTexture.ToString("X2")}");
 
             File.AppendLine();
             File.AppendLine("// U,V,Width,Height");
             File.AppendLine();
-            File.AppendLine($"#define TEXT_{this.TextSizeName.Substring(0,1)}Y {this.FontInfo.UVInfo.TileHeight}");
+            File.AppendLine($"#define TEXT_{this.TextSizeName.Substring(0, 1)}Y {this.FontInfo.UVInfo.TileHeight}");
             File.AppendLine();
         }
 
@@ -72,12 +77,13 @@ namespace UVGen
                 cpt = this.FontInfo.UVInfo.PrimaryColumnsPerTexture;
                 spt = this.FontInfo.UVInfo.PrimarySpritesPerTexture;
                 offset = 0;
-            } else
+            }
+            else
             {
                 rpt = this.FontInfo.UVInfo.AuxRowsPerTexture;
                 cpt = this.FontInfo.UVInfo.AuxColumnsPerTexture;
                 spt = this.FontInfo.UVInfo.AuxSpritesPerTexture;
-                offset = this.FontInfo.UVInfo.PrimarySpritesPerTexture - this.FontInfo.UVInfo.AuxSpritesPerTexture; 
+                offset = this.FontInfo.UVInfo.PrimarySpritesPerTexture - this.FontInfo.UVInfo.AuxSpritesPerTexture;
             }
 
             File.AppendLine($"static constexpr unsigned int {this.TextSizeName.ToLowerInvariant()}_font_{textureIndex}_texcoords[] = {{");
@@ -86,8 +92,8 @@ namespace UVGen
                 for (int j = 0; j < cpt; j++)
                 {
                     int characterIndex = (i * cpt) + j + (spt * textureIndex) + offset;
-                    if (characterIndex >= this.FontInfo.CharMap.Count) break;
-                    var charEntry = this.FontInfo.CharMap[characterIndex];
+                    if (characterIndex >= this.Charset.Count) break;
+                    var charEntry = this.FontInfo.CharMap.First(c => c.Character == this.Charset[characterIndex]);
                     File.AppendLine($"    {j * this.FontInfo.UVInfo.TileWidth}, " +
                         $"{i * this.FontInfo.UVInfo.TileHeight}, {charEntry.Width}, " +
                         $"TEXT_{this.TextSizeName.Substring(0, 1)}Y, // {UnicodeInfo.GetName(charEntry.Character)}");
@@ -97,6 +103,31 @@ namespace UVGen
             File.AppendLine("};");
         }
 
+        private void WriteLut()
+        {
+            File.AppendLine($"static constexpr u16 {this.TextSizeName}_utf16_lookup_table[] = {{");
+            // char latestChar = this.Chars.OrderByDescending(c => c.Character).First().Character;
+            int lineCounter = 0;
+            for (int i = 0; i <this.Charset.Count; i++)
+            {
+                int index = this.FontInfo.CharMap.First(c => c.Character == this.Charset[i]).Character;
+                File.Append($"0x{index.ToString("X2")},");
+                if (lineCounter == 0x20)
+                {
+                    lineCounter = 0;
+                    File.AppendLine();
+                }
+                else
+                {
+                    lineCounter++;
+                }
+            }
+            File.AppendLine();
+            File.AppendLine("};");
+            File.AppendLine();
+
+
+        }
         private void WriteEof()
         {
             File.AppendLine();
@@ -109,6 +140,7 @@ namespace UVGen
         }
 
         public FontInfo FontInfo { get; }
+        public IList<char> Charset { get; }
         private string TextSizeName { get; }
         private StringBuilder File { get; }
     }

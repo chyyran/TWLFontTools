@@ -6,7 +6,7 @@ using System.Xml.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace NFTRFontDumper
+namespace NFTRFontTexGen
 {
     class NFTRDumper
     {
@@ -22,14 +22,14 @@ namespace NFTRFontDumper
             Fill_CharTile();
         }
 
-        public Image<Rgba32> GetTextureMapping()
+        public IEnumerable<Image<Rgba32>> GetTextureMapping(IList<CharmapEntry> ce, IList<char> cs)
         {
-            return NFTR.ToImage(font, palette);
+            return NFTR.ToTileset(font, palette, ce, cs);
         }
 
-        public XDocument GetXmlInfo()
+        public XDocument GetXmlInfo(IList<char> cs)
         {
-            return NFTR.ExportInfo(charTile, font);
+            return NFTR.ExportInfo(charTile, font, cs.Count);
         }
 
         private void Fill_CharTile()

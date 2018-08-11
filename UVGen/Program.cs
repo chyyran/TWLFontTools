@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -21,11 +22,24 @@ namespace UVGen
 
             XDocument doc = XDocument.Load(File.OpenRead(args[0]));
             var charmap = new FontInfo(doc);
+            var charset = new List<char>();
+            var x = File.ReadAllText("charset.csv").Split(",");
 
-            var coords = new UVCoordinateGenerator(charmap, size, 512, 256);
+            foreach (string c in x)
+            {
+                try
+                {
+                    charset.Add((char)Int32.Parse(c));
+                }
+                catch
+                {
+
+                }
+            }
+            var coords = new UVCoordinateGenerator(charmap, charset, size, 1024, 256);
             File.WriteAllText($"uvcoord_{size.ToLowerInvariant()}_font.h", coords.ToString());
-            var grith = new GritHeaderGenerator(charmap, size);
-            File.WriteAllText($"{size.ToLowerInvariant()}_font.h", grith.ToString());
+            //var grith = new GritHeaderGenerator(charmap, size);
+            //File.WriteAllText($"{size.ToLowerInvariant()}_font.h", grith.ToString());
         }
     }
 }

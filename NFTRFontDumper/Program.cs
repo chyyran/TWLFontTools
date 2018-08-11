@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Text;
+using System.Xml.Linq;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing.Quantization;
@@ -33,6 +34,8 @@ namespace NFTRFontDumper
 
             }
 
+          
+
             Stream nftrData = File.OpenRead(args[0]);
             var font = NFTR.Read(nftrData);
             var dumper = new NFTRDumper(font, color);
@@ -41,24 +44,13 @@ namespace NFTRFontDumper
             {
                 dumper.GetXmlInfo().Save(file);
             }
-            StringBuilder gritFile = new StringBuilder();
-            gritFile.AppendLine("-W3");
-            gritFile.AppendLine("-gb");
-            gritFile.AppendLine("-gB4");
-            gritFile.AppendLine("-gT FF00FF");
+            
             int counter = 0;
             var encoder = new PngEncoder();
-            foreach (var texture in dumper.GetTextureMapping())
+            using (var file = File.OpenWrite($"{args[1]}_font_{counter}.png"))
             {
-                using (var file = File.OpenWrite($"{args[1]}_font_{counter}.png"))
-                {
-                    texture.Save(file, encoder);
-                    File.WriteAllText($"{args[1]}_font_{counter}.grit", gritFile.ToString());
-                }
-                counter++;
+                dumper.GetTextureMapping().Save(file, encoder);
             }
-            Console.ReadLine();
-           
         }
 
     }

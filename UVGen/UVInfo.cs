@@ -18,15 +18,13 @@ namespace UVGen
 
         public int TileHeight { get; }
         public int TileWidth { get; }
-        public UVInfo(int cpt, int rpt, int spt, int th, int tw, int tc, int acpt, int arpt, int aspt)
+        public UVInfo(int cpt, int rpt, int spt, int th, int tw, int tc)
         {
             this.PrimaryColumnsPerTexture = cpt;
             this.PrimaryRowsPerTexture = rpt;
             this.PrimarySpritesPerTexture = spt;
 
-            this.AuxColumnsPerTexture = acpt;
-            this.AuxRowsPerTexture = arpt;
-            this.AuxSpritesPerTexture = aspt;
+     
             this.AuxTextureCount = tc;
             this.TileHeight = th;
             this.TileWidth = tw;
