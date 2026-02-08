@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2018 RonnChyran
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace TWLFontTableDumper
 {
@@ -30,7 +29,8 @@ namespace TWLFontTableDumper
         private Stream TWLFontTableDat { get; }
 
         private static readonly int NFTRResourceCountOffset = 0x0084;
-        
+        private static readonly int NFTRRegionOffset = 0x0086;
+
         // We should check this, but since there is not much information available on
         // CHN and KOR regions, can not be sure that the RSA Signature matches up with
         // font files on such systems.
@@ -68,19 +68,22 @@ namespace TWLFontTableDumper
 
         /// <summary>
         /// Determines the region of the TWLFontTableRegion
-        /// by number of resources.
-        /// 3 - Normal (USA/JAP/EUR/AUS)
-        /// 9 - KOR
-        /// 5 - CHN (?)
+        /// by the byte at 0x0086.
+        /// 0 - Normal (USA/JAP/EUR/AUS)
+        /// 4 - CHN
+        /// 5 - KOR
         /// </summary>
         /// <returns></returns>
         private TWLFontTableRegions GetTWLFontTableRegions()
         {
-            switch (this.NFTRResourceCount)
+            this.TWLFontTableDat.Seek(NFTRRegionOffset, SeekOrigin.Begin);
+            switch (this.TWLFontTableDat.ReadByte())
             {
-                case 3:
+                case 0:
                     return TWLFontTableRegions.Normal;
-                case 9:
+                case 4:
+                    return TWLFontTableRegions.China;
+                case 5:
                     return TWLFontTableRegions.Korea;
                 default:
                     return TWLFontTableRegions.Unknown;

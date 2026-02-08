@@ -39,6 +39,11 @@ namespace TWLFontTableDumper
             {
                 Console.WriteLine($"Found resource {resource.ResourceName} (Size: {resource.CompressedResourceSize}," +
                     $" SHA1: {BitConverter.ToString(resource.CompressedResourceSHA1).Replace("-", "")})");
+                if (resource.CompressedResourceSize == 0)
+                {
+                    Console.WriteLine($"Empty resource, omitting");
+                    continue;
+                }
                 try
                 {
                     var writer = resource.GetWriter();
